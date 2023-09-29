@@ -14,8 +14,8 @@ set(PROJECT_NAME yaya_logtime)
 
 project(${PROJECT_NAME})
 
-set(SRC_LIST yaya_logger_time.c)
-set(INC_LIST yaya_logger_time.h)
+set(SRC_LIST yaya_logtime.c)
+set(INC_LIST yaya_logtime.h)
 
 add_library(${PROJECT_NAME} SHARED ${SRC_LIST} ${INC_LIST})
 

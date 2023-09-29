@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 3.0)
 set(CMAKE_C_STANDARD 11)
 
 set(VERSION 0.1)
-set(PROJECT_NAME yaya_logtime_test)
+set(PROJECT_NAME logtime_test)
 project(${PROJECT_NAME})
 
 add_executable(

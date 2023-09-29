@@ -13,7 +13,7 @@
 #include "yaya_memory.h"
 #include "yaya_bool.h"
 
-#include "yaya_logger_time.h"
+#include "yaya_logtime.h"
 
 typedef struct logger_time_node_t {
     char*    name;
