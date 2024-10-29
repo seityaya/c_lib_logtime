@@ -1,9 +1,9 @@
 //Author                 : Seityagiya Terlekchi
-//Contacts               : seityaya@ukr.net
+//Contacts               : terlekchiseityaya@gmail.com
 //Creation Date          : 2023.09
 //License Link           : https://spdx.org/licenses/LGPL-2.1-or-later.html
 //SPDX-License-Identifier: LGPL-2.1-or-later
-//Copyright © 2023-2023 Seityagiya Terlekchi. All rights reserved.
+//Copyright © 2023-2024 Seityagiya Terlekchi. All rights reserved.
 
 #include "yaya_logtime.h"
 
@@ -11,7 +11,7 @@
 
 #define ticstop(tic) do { clock_t now = clock(); while(clock() <= now + (tic)){ } } while (0)
 
-logger_time_t* logger_time = NULL;
+logtime_t* logger_time = NULL;
 
 int fibonacci(int num) {
     int res = 0;
@@ -261,14 +261,14 @@ int test_lin_cyc(){
     return 0;
 }
 int test_rec(){
-    logtime_beg(logger_time, "Factorial from 9");
-    factorial(9);
+    logtime_beg(logger_time, "Factorial from 11");
+    factorial(11);
     logtime_end(logger_time);
 
     logtime_beg(logger_time, "Factorial loop 10");
     for(int i = 0; i < 10; i++) {
-        logtime_beg(logger_time, "Factorial from 9");
-        factorial(9);
+        logtime_beg(logger_time, "Factorial from 11");
+        factorial(11);
         logtime_end(logger_time);
         logtime_bar(logger_time);
     }
@@ -290,12 +290,12 @@ int test_rec(){
 }
 
 int main() {
-    logger_time_setting_t logger_time_setting = {.tab_size = 4,
-                                                 .get_time_tic = logtime_time_tic,
-                                                 .get_time_sec = logtime_time_sec,
-                                                 .format_string = "" };
+    logtime_sett_t logtime_setting = {.tab_size = 4,
+                                      .get_time_tic = logtime_time_tic,
+                                      .get_time_sec = logtime_time_sec,
+                                      .format_string = "" };
 
-    logtime_init(&logger_time, &logger_time_setting);
+    logtime_init(&logger_time, &logtime_setting);
 
     test_lin();
     test_cyc();

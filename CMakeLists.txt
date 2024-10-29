@@ -7,23 +7,11 @@
 
 cmake_minimum_required(VERSION 3.0)
 
-project(yaya_logtime_using)
+set(PROJECT_NAME yaya_logtime)
 
-set(CMAKE_C_STANDARD 11)
+project(${PROJECT_NAME})
 
-set(SRC_LIST
-    main.c
-)
-
-set(INC_LIST
-)
-
-add_executable(
-    ${PROJECT_NAME}
-    ${SRC_LIST}
-    ${INC_LIST}
-)
-
-target_link_libraries(${PROJECT_NAME} PUBLIC yaya_logtime)
-
-target_include_directories (${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../core)
+add_subdirectory(core)
+add_subdirectory(libs/c_memory/)
+add_subdirectory(test)
+add_subdirectory(using)
