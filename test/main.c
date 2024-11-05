@@ -41,12 +41,12 @@ void test_lin(void) {
     {
         ticstop(100);
         logtime_beg(logger_time, "Lin 1");
-        { ticstop(100); }
+        ticstop(100);
         logtime_end(logger_time);
 
         ticstop(100);
         logtime_beg(logger_time, "Lin 2");
-        { ticstop(100); }
+        ticstop(100);
         logtime_end(logger_time);
 
         logtime_beg(logger_time, "Lin 3");
@@ -54,7 +54,7 @@ void test_lin(void) {
             logtime_beg(logger_time, "Lin 3.1");
             {
                 logtime_beg(logger_time, "Lin 3.1.1");
-                { ticstop(100); }
+                ticstop(100);
                 logtime_end(logger_time);
             }
             logtime_end(logger_time);
@@ -64,7 +64,7 @@ void test_lin(void) {
                 logtime_beg(logger_time, "Lin 3.2.1");
                 {
                     logtime_beg(logger_time, "Lin 3.2.1.1");
-                    { ticstop(100); }
+                    ticstop(100);
                     logtime_end(logger_time);
                 }
                 logtime_end(logger_time);
@@ -78,13 +78,13 @@ void test_lin(void) {
                     logtime_beg(logger_time, "Lin 3.3.1.1");
                     {
                         logtime_beg(logger_time, "Lin 3.3.1.1.1");
-                        { ticstop(100); }
+                        ticstop(100);
                         logtime_end(logger_time);
                         logtime_beg(logger_time, "Lin 3.3.1.1.2");
-                        { ticstop(100); }
+                        ticstop(100);
                         logtime_end(logger_time);
                         logtime_beg(logger_time, "Lin 3.3.1.1.3");
-                        { ticstop(100); }
+                        ticstop(100);
                         logtime_end(logger_time);
                     }
                     logtime_end(logger_time);
@@ -177,7 +177,7 @@ void test_lin_cyc(void) {
     logtime_beg(logger_time, "For 1");
     for (int i = 0; i < 10; i++) {
         logtime_beg(logger_time, "Lin 1.1");
-        { ticstop(100); }
+        ticstop(100);
         logtime_end(logger_time);
 
         logtime_beg(logger_time, "For 1.2");
@@ -188,21 +188,21 @@ void test_lin_cyc(void) {
         logtime_end(logger_time);
 
         logtime_beg(logger_time, "Lin 1.3");
-        { ticstop(100); }
+        ticstop(100);
         logtime_end(logger_time);
 
         logtime_beg(logger_time, "For 1.4");
         for (int j = 0; j < 10; j++) {
             ticstop(1000);
             logtime_beg(logger_time, "Lin 1.4.1");
-            { ticstop(100); }
+            ticstop(100);
             logtime_end(logger_time);
             logtime_bar(logger_time);
         }
         logtime_end(logger_time);
 
         logtime_beg(logger_time, "Lin 1.5");
-        { ticstop(100); }
+        ticstop(100);
         logtime_end(logger_time);
 
         logtime_beg(logger_time, "For 1.6");
@@ -213,13 +213,13 @@ void test_lin_cyc(void) {
                 logtime_beg(logger_time, "Lin 1.6.1.1");
                 {
                     logtime_beg(logger_time, "Lin 1.6.1.1.1");
-                    { ticstop(100); }
+                    ticstop(100);
                     logtime_end(logger_time);
                 }
                 logtime_end(logger_time);
 
                 logtime_beg(logger_time, "Lin 1.6.2.1");
-                { ticstop(100); }
+                ticstop(100);
                 logtime_end(logger_time);
             }
             logtime_end(logger_time);
@@ -262,9 +262,14 @@ void test_rec(void) {
 }
 
 int main(void) {
-    logtime_sett_t logtime_setting = {.tab_size = 4, .get_time_tic = logtime_time_tic, .get_time_sec = logtime_time_sec, .format_string = ""};
+    logtime_sett_t logtime_setting = {.tab_size = 4, .format_string = ""};
 
     logtime_init(&logger_time, &logtime_setting);
+
+
+    logtime_beg(logger_time, "SartAllStop");
+    logtime_beg(logger_time, "SartStop");
+    logtime_end(logger_time);
 
     test_lin();
     test_cyc();
@@ -272,6 +277,8 @@ int main(void) {
     test_lin_cyc();
     test_cyc();
     test_rec();
+
+    logtime_end(logger_time);
 
     logtime_out(logger_time, stdout);
     logtime_free(&logger_time);

@@ -6,22 +6,21 @@
 // Copyright © 2023-2024 Seityagiya Terlekchi. All rights reserved.
 
 #include "stdlib.h"
-#include "string.h"
-#include "time.h"
 
 #include "yaya_logtime.h"
 #include "yaya_memory.h"
+#include "yaya_systime.h"
 
 typedef struct logtime_node_t {
     char*    name;
     intmax_t deep;
 
-    intmax_t time_beg;
-    intmax_t time_end;
-    intmax_t time_sum;
-    intmax_t time_min;
-    intmax_t time_max;
-    intmax_t time_cnt;
+    time_system_t time_beg;
+    time_system_t time_end;
+    time_system_t time_sum;
+    time_system_t time_min;
+    time_system_t time_max;
+    intmax_t      time_cnt;
 
     bool                    bar_flag;
     bool                    loop_flag;
@@ -31,33 +30,36 @@ typedef struct logtime_node_t {
     struct logtime_node_t*  prev;
 } logtime_node_t;
 
-typedef struct private_logger_time_t {
+typedef struct {
     logtime_sett_t* sett;
     logtime_node_t* last;
     logtime_node_t* head;
 } private_logger_time_t;
 
-logtime_sett_t logtime_setting_std = {.tab_size = 4, .get_time_tic = logtime_time_tic, .get_time_sec = logtime_time_sec, .format_string = ""};
-
 bool logtime_init(logtime_t** logger_time, logtime_sett_t* logger_time_setting) {
+    if (logger_time_setting == NULL) {
+        return false;
+    }
+    if (logger_time == NULL) {
+        return false;
+    }
     if (!memory_req((void**)(logger_time), 1, sizeof(logtime_t))) {
         return false;
     }
     if (!memory_req((void**)(&(*logger_time)->ptr), 1, sizeof(private_logger_time_t))) {
         return false;
     }
+
     private_logger_time_t* logtime = (*logger_time)->ptr;
 
     if (!memory_req((void**)(&(logtime->head)), 1, sizeof(logtime_node_t))) {
         return false;
     }
+
     logtime->last = logtime->head;
 
-    if (logger_time_setting != NULL) {
-        logtime->sett = logger_time_setting;
-    } else {
-        logtime->sett = &logtime_setting_std;
-    }
+    logtime->sett = logger_time_setting;
+
     return true;
 }
 
@@ -95,14 +97,10 @@ bool logtime_free(logtime_t** logger_time) {
     return true;
 }
 
-intmax_t logtime_time_tic(void) { return clock(); }
-
-double logtime_time_sec(intmax_t tic) { return (double)(tic) / (double)(CLOCKS_PER_SEC); }
-
 bool logtime_beg(logtime_t* logger_time, char* name) {
     private_logger_time_t* logtime = logger_time->ptr;
-    intmax_t               time    = logtime->sett->get_time_tic();
-    logtime_node_t*        node    = NULL;
+    //    time_system_t          time_func_beg = time_system_get(YAYA_TIME_CLOCK_TYPE_REALTIME);
+    logtime_node_t* node = NULL;
 
     if (logtime->last->loop_flag == false) {
         if (!memory_req((void**)(&logtime->last->node), logtime->last->node_count + 1, sizeof(logtime_node_t*))) {
@@ -113,13 +111,18 @@ bool logtime_beg(logtime_t* logger_time, char* name) {
             return false;
         }
 
-        node           = logtime->last->node[logtime->last->node_count];
-        node->name     = name;
-        node->deep     = logtime->last->deep + 1;
-        node->prev     = logtime->last;
-        node->time_min = INTMAX_MAX;
-        node->time_max = INTMAX_MIN;
-        node->time_sum = 0;
+        node       = logtime->last->node[logtime->last->node_count];
+        node->name = name;
+        node->deep = logtime->last->deep + 1;
+        node->prev = logtime->last;
+
+        time_fragment_t time_min = time_build(YAYA_TIME_LIMIT_SECOND_MAX, 0, 0, 0);
+        time_fragment_t time_max = time_build(YAYA_TIME_LIMIT_SECOND_MIN, 0, 0, 0);
+        time_fragment_t time_sum = time_build(0, 0, 0, 0);
+
+        node->time_min = time_system_build(time_min, time_min, time_min);
+        node->time_max = time_system_build(time_max, time_max, time_max);
+        node->time_sum = time_system_build(time_sum, time_sum, time_sum);
         node->time_cnt = 0;
 
         logtime->last->node_count++;
@@ -130,36 +133,40 @@ bool logtime_beg(logtime_t* logger_time, char* name) {
 
     logtime->last = node;
 
-    node->time_end  = 0;
-    node->time_beg  = logtime->sett->get_time_tic();
-    node->time_sum -= node->time_beg - time;
+    time_fragment_t time_end = time_build(0, 0, 0, 0);
+
+    node->time_end              = time_system_build(time_end, time_end, time_end);
+    time_system_t time_func_end = time_system_get(YAYA_TIME_CLOCK_TYPE_REALTIME);
+
+    node->time_beg = time_func_end;
+    //    node->time_sum = time_system_sum(node->time_sum, time_system_dif(node->time_beg, time_beg));
 
     return true;
 }
 
-void logtime_end(logtime_t* logger_time) {
-    private_logger_time_t* logtime = logger_time->ptr;
-    intmax_t               time    = logtime->sett->get_time_tic();
-    logtime_node_t*        node    = logtime->last;
+bool logtime_end(logtime_t* logger_time) {
+    private_logger_time_t* logtime       = logger_time->ptr;
+    time_system_t          time_func_beg = time_system_get(YAYA_TIME_CLOCK_TYPE_REALTIME);
+    logtime_node_t*        node          = logtime->last;
 
-    node->time_end = time;
-
-    intmax_t time_diff = logtime->last->time_end - logtime->last->time_beg;
-
-    node->time_sum += time_diff;
+    node->time_end          = time_func_beg;
+    time_system_t time_diff = time_system_dif(logtime->last->time_end, logtime->last->time_beg);
+    node->time_sum          = time_system_sum(node->time_sum, time_diff);
 
     if (node->bar_flag == false) {
-        node->time_min = time_diff < node->time_min ? time_diff : node->time_min;
-        node->time_max = time_diff > node->time_max ? time_diff : node->time_max;
+        node->time_min = time_system_min(time_diff, node->time_min);
+        node->time_max = time_system_max(time_diff, node->time_max);
         node->time_cnt++;
     }
     logtime->last = node->prev;
 
-    intmax_t time_correction  = logtime->sett->get_time_tic();
-    node->time_sum           -= time_correction - time;
+    //    time_system_t time_func_end = time_system_get(YAYA_TIME_CLOCK_TYPE_REALTIME);
+    //    node->time_sum                = time_system_dif(node->time_sum, time_system_dif(time_correction, time_cor_beg));
+    //    node->time_sum = time_system_dif(node->time_sum, time_func_beg);
+    return true;
 }
 
-void recursive_set_flag(logtime_node_t* head) {
+static void recursive_set_flag(logtime_node_t* head) {
     for (size_t i = 0; i < head->node_count; i++) {
         head->node[i]->loop_flag  = true;
         head->node[i]->loop_count = 0;
@@ -167,18 +174,18 @@ void recursive_set_flag(logtime_node_t* head) {
     }
 }
 
-void logtime_bar(logtime_t* logger_time) {
-    private_logger_time_t* logtime = logger_time->ptr;
-    intmax_t               time    = logtime->sett->get_time_tic();
-    logtime_node_t*        node    = logtime->last;
+bool logtime_bar(logtime_t* logger_time) {
+    private_logger_time_t* logtime       = logger_time->ptr;
+    time_system_t          time_func_beg = time_system_get(YAYA_TIME_CLOCK_TYPE_REALTIME);
+    logtime_node_t*        node          = logtime->last;
 
-    node->time_end = time;
+    node->time_end = time_func_beg;
 
-    intmax_t time_diff = logtime->last->time_end - logtime->last->time_beg;
+    time_system_t time_diff = time_system_dif(logtime->last->time_end, logtime->last->time_beg);
 
-    node->time_min  = time_diff < node->time_min ? time_diff : node->time_min;
-    node->time_max  = time_diff > node->time_max ? time_diff : node->time_max;
-    node->time_sum += time_diff;
+    node->time_min = time_system_min(time_diff, node->time_min);
+    node->time_max = time_system_max(time_diff, node->time_max);
+    node->time_sum = time_system_sum(node->time_sum, time_diff);
     node->time_cnt++;
 
     node->bar_flag   = true;
@@ -187,28 +194,52 @@ void logtime_bar(logtime_t* logger_time) {
 
     recursive_set_flag(node);
 
-    intmax_t time_correction  = logtime->sett->get_time_tic();
-    node->time_sum           -= time_correction - time;
+    //    time_system_t time_correction = time_system_get(YAYA_TIME_CLOCK_TYPE_REALTIME);
+    //    node->time_sum                = time_system_dif(node->time_sum, time_system_dif(time_correction, time_func_beg));
+    //    node->time_sum                = time_system_sum(node->time_sum, time_func_beg);
+    return true;
 }
 
 static bool recursive_out_file(private_logger_time_t* logtime, logtime_node_t* head, FILE* out) {
     if (head != NULL) {
         for (size_t i = 0; i < head->node_count; i++) {
             logtime_node_t* node = head->node[i];
-            if (0 > fprintf(out,
-                            "%10ld; " "%f; " "%10ld; " "%10ld; " "%10ld; " "%10ld; " "%s" "%*s%s \n",
-                            node->time_sum,
-                            logtime->sett->get_time_sec(node->time_sum),
-                            node->time_min,
-                            node->time_max,
-                            node->time_cnt,
-                            node->time_sum / node->time_cnt,
-                            node->node_count == 0 ? ". " : "> ",
-                            (int)((node->deep - 1) * logtime->sett->tab_size),
-                            "",
-                            node->name)) {
-                return false;
+            // clang-format off
+            fprintf(out, "%15.9f; " "%15.9f; " "%15.9f; ",
+                         time_convflt(node->time_sum.real),
+                         time_convflt(node->time_sum.user),
+                         time_convflt(node->time_sum.sys));
+
+            if (node->loop_flag) {
+                fprintf(out, "%15.9f; " "%15.9f; " "%15.9f; "
+                             "%15.9f; " "%15.9f; " "%15.9f; ",
+                             time_convflt(node->time_min.real),
+                             time_convflt(node->time_min.user),
+                             time_convflt(node->time_min.sys),
+                             time_convflt(node->time_max.real),
+                             time_convflt(node->time_max.user),
+                             time_convflt(node->time_max.sys));
+            } else {
+                fprintf(out, "%15s; %15s; %15s; "
+                             "%15s; %15s; %15s; ",
+                             "-", "-", "-",
+                             "-", "-", "-");
             }
+
+            if (node->loop_flag) {
+                fprintf(out, "%15.9f; " "%15.9f; " "%15.9f; ",
+                             time_convflt(node->time_sum.real) / node->time_cnt,
+                             time_convflt(node->time_sum.user) / node->time_cnt,
+                             time_convflt(node->time_sum.sys)  / node->time_cnt);
+            } else {
+                fprintf(out, "%15s; %15s; %15s; ",
+                             "-", "-", "-");
+            }
+
+            fprintf(out, "%10ld; ", node->time_cnt);
+
+            fprintf(out, "%s; %*s%s \n", node->node_count == 0 ? ". " : "> ", (int)((node->deep - 1) * logtime->sett->tab_size), "", node->name);
+            // clang-format on
 
             if (!recursive_out_file(logtime, node, out)) {
                 return false;
@@ -221,7 +252,16 @@ static bool recursive_out_file(private_logger_time_t* logtime, logtime_node_t* h
 bool logtime_out(logtime_t* logger_time, FILE* out) {
     private_logger_time_t* logtime = logger_time->ptr;
     if (logtime->head == logtime->last) {
-        fprintf(out, "  time tic;      sec;        min;        max;        cnt;    avg cnt; ^ text:\n");
+        // clang-format off
+        fprintf(
+            out,
+            "  time_sum.real;   time_sum.user;    time_sum.sys; "
+            "  time_min.real;   time_min.user;    time_min.sys; "
+            "  time_max.real;   time_max.user;    time_max.sys; "
+            "  time_avg.real;   time_avg.user;    time_avg.sys; "
+            "  cnt loop; "
+            "^ ; text;\n");
+        // clang-format on
         if (!recursive_out_file(logtime, logtime->head, out)) {
             return false;
         }
