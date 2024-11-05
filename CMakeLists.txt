@@ -7,11 +7,13 @@
 
 cmake_minimum_required(VERSION 3.0)
 
-set(PROJECT_NAME yaya_logtime)
+project(yaya_logtime_project)
 
-project(${PROJECT_NAME})
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic -Werror")
 
 add_subdirectory(core)
-add_subdirectory(libs/c_memory/)
 add_subdirectory(test)
 add_subdirectory(using)
+
+add_subdirectory(libs/c_lib_memory/core)
+add_subdirectory(libs/c_lib_systime/core)

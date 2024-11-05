@@ -11,7 +11,7 @@ project(
     yaya_logtime
     VERSION      0.1.0.0
     LANGUAGES    C
-    HOMEPAGE_URL "https://github.com/seityaya/c_logtime"
+    HOMEPAGE_URL "https://github.com/seityaya/c_lib_logtime"
     DESCRIPTION  "Tree view time logger"
 )
 
@@ -30,3 +30,4 @@ add_library(${PROJECT_NAME} ${SRC_LIST} ${INC_LIST})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC yaya_memory)
+target_link_libraries(${PROJECT_NAME} PUBLIC yaya_systime)
