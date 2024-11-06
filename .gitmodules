@@ -1,0 +1,6 @@
+[submodule "libs/c_lib_memory"]
+	path = libs/c_lib_memory
+	url = https://github.com/seityaya/c_lib_memory
+[submodule "libs/c_lib_systime"]
+	path = libs/c_lib_systime
+	url = https://github.com/seityaya/c_lib_systime
