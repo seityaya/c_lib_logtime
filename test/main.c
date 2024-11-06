@@ -262,13 +262,22 @@ void test_rec(void) {
 }
 
 int main(void) {
-    logtime_sett_t logtime_setting = {.tab_size = 4, .format_string = ""};
+    logtime_sett_t logtime_setting = {
+        .tab_size = 4,
+        .format_string = ""
+    };
 
     logtime_init(&logger_time, &logtime_setting);
 
 
     logtime_beg(logger_time, "SartAllStop");
+
     logtime_beg(logger_time, "SartStop");
+    logtime_end(logger_time);
+
+    logtime_beg(logger_time, "SartStop2");
+    logtime_beg(logger_time, "SartStop1");
+    logtime_end(logger_time);
     logtime_end(logger_time);
 
     test_lin();

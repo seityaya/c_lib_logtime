@@ -99,30 +99,38 @@ bool logtime_free(logtime_t** logger_time) {
 
 bool logtime_beg(logtime_t* logger_time, char* name) {
     private_logger_time_t* logtime = logger_time->ptr;
-    //    time_system_t          time_func_beg = time_system_get(YAYA_TIME_CLOCK_TYPE_REALTIME);
+
+    //    time_system_t time_func_beg;
+    time_system_t time_func_end;
+
+    //    time_func_beg.real = time_get(YAYA_TIME_FRAGMENT_TYPE_REAL, YAYA_TIME_CLOCK_TYPE_REALTIME);
+    //    time_func_beg.user = time_get(YAYA_TIME_FRAGMENT_TYPE_USER, YAYA_TIME_CLOCK_TYPE_NONE);
+    //    time_func_beg.sys  = time_get(YAYA_TIME_FRAGMENT_TYPE_SYS, YAYA_TIME_CLOCK_TYPE_NONE);
+
+    time_fragment_t time_nul = time_build(0, 0, 0, 0);
+
     logtime_node_t* node = NULL;
 
     if (logtime->last->loop_flag == false) {
         if (!memory_req((void**)(&logtime->last->node), logtime->last->node_count + 1, sizeof(logtime_node_t*))) {
             return false;
         }
-
         if (!memory_req((void**)(&logtime->last->node[logtime->last->node_count]), 1, sizeof(logtime_node_t))) {
             return false;
         }
 
-        node       = logtime->last->node[logtime->last->node_count];
+        node = logtime->last->node[logtime->last->node_count];
+
         node->name = name;
         node->deep = logtime->last->deep + 1;
         node->prev = logtime->last;
 
         time_fragment_t time_min = time_build(YAYA_TIME_LIMIT_SECOND_MAX, 0, 0, 0);
         time_fragment_t time_max = time_build(YAYA_TIME_LIMIT_SECOND_MIN, 0, 0, 0);
-        time_fragment_t time_sum = time_build(0, 0, 0, 0);
 
         node->time_min = time_system_build(time_min, time_min, time_min);
         node->time_max = time_system_build(time_max, time_max, time_max);
-        node->time_sum = time_system_build(time_sum, time_sum, time_sum);
+        node->time_sum = time_system_build(time_nul, time_nul, time_nul);
         node->time_cnt = 0;
 
         logtime->last->node_count++;
@@ -133,36 +141,51 @@ bool logtime_beg(logtime_t* logger_time, char* name) {
 
     logtime->last = node;
 
-    time_fragment_t time_end = time_build(0, 0, 0, 0);
+    node->time_end = time_system_build(time_nul, time_nul, time_nul);
 
-    node->time_end              = time_system_build(time_end, time_end, time_end);
-    time_system_t time_func_end = time_system_get(YAYA_TIME_CLOCK_TYPE_REALTIME);
+    time_func_end.sys  = time_get(YAYA_TIME_FRAGMENT_TYPE_SYS, YAYA_TIME_CLOCK_TYPE_NONE);
+    time_func_end.user = time_get(YAYA_TIME_FRAGMENT_TYPE_USER, YAYA_TIME_CLOCK_TYPE_NONE);
+    time_func_end.real = time_get(YAYA_TIME_FRAGMENT_TYPE_REAL, YAYA_TIME_CLOCK_TYPE_REALTIME);
 
     node->time_beg = time_func_end;
-    //    node->time_sum = time_system_sum(node->time_sum, time_system_dif(node->time_beg, time_beg));
+
+    //    if(node->prev != NULL) {
+    //        node->prev->time_sum = time_system_dif(node->prev->time_sum, time_system_dif(time_func_end, time_func_beg));
+    //    }
 
     return true;
 }
 
 bool logtime_end(logtime_t* logger_time) {
-    private_logger_time_t* logtime       = logger_time->ptr;
-    time_system_t          time_func_beg = time_system_get(YAYA_TIME_CLOCK_TYPE_REALTIME);
-    logtime_node_t*        node          = logtime->last;
+    private_logger_time_t* logtime = logger_time->ptr;
+    logtime_node_t*        node    = logtime->last;
 
-    node->time_end          = time_func_beg;
-    time_system_t time_diff = time_system_dif(logtime->last->time_end, logtime->last->time_beg);
-    node->time_sum          = time_system_sum(node->time_sum, time_diff);
+    time_system_t time_func_beg;
+    //    time_system_t time_func_end;
+
+    time_func_beg.real = time_get(YAYA_TIME_FRAGMENT_TYPE_REAL, YAYA_TIME_CLOCK_TYPE_REALTIME);
+    time_func_beg.user = time_get(YAYA_TIME_FRAGMENT_TYPE_USER, YAYA_TIME_CLOCK_TYPE_NONE);
+    time_func_beg.sys  = time_get(YAYA_TIME_FRAGMENT_TYPE_SYS, YAYA_TIME_CLOCK_TYPE_NONE);
+
+    node->time_end = time_func_beg;
 
     if (node->bar_flag == false) {
-        node->time_min = time_system_min(time_diff, node->time_min);
-        node->time_max = time_system_max(time_diff, node->time_max);
+        node->time_min = time_system_min(node->time_min, time_system_dif(node->time_end, node->time_beg));
+        node->time_max = time_system_max(node->time_max, time_system_dif(node->time_end, node->time_beg));
         node->time_cnt++;
     }
-    logtime->last = node->prev;
+    logtime->last = logtime->last->prev;
 
-    //    time_system_t time_func_end = time_system_get(YAYA_TIME_CLOCK_TYPE_REALTIME);
-    //    node->time_sum                = time_system_dif(node->time_sum, time_system_dif(time_correction, time_cor_beg));
-    //    node->time_sum = time_system_dif(node->time_sum, time_func_beg);
+    node->time_sum = time_system_sum(node->time_sum, time_system_dif(node->time_end, node->time_beg));
+
+    //    time_func_end.sys  = time_get(YAYA_TIME_FRAGMENT_TYPE_SYS, YAYA_TIME_CLOCK_TYPE_NONE);
+    //    time_func_end.user = time_get(YAYA_TIME_FRAGMENT_TYPE_USER, YAYA_TIME_CLOCK_TYPE_NONE);
+    //    time_func_end.real = time_get(YAYA_TIME_FRAGMENT_TYPE_REAL, YAYA_TIME_CLOCK_TYPE_REALTIME);
+
+    //    if(node->prev != NULL) {
+    //        node->prev->time_sum = time_system_dif(node->prev->time_sum, time_system_dif(time_func_end, time_func_beg));
+    //    }
+
     return true;
 }
 
@@ -175,13 +198,19 @@ static void recursive_set_flag(logtime_node_t* head) {
 }
 
 bool logtime_bar(logtime_t* logger_time) {
-    private_logger_time_t* logtime       = logger_time->ptr;
-    time_system_t          time_func_beg = time_system_get(YAYA_TIME_CLOCK_TYPE_REALTIME);
-    logtime_node_t*        node          = logtime->last;
+    private_logger_time_t* logtime = logger_time->ptr;
+    logtime_node_t*        node    = logtime->last;
+
+    time_system_t time_func_beg;
+    //    time_system_t time_func_end;
+
+    time_func_beg.real = time_get(YAYA_TIME_FRAGMENT_TYPE_REAL, YAYA_TIME_CLOCK_TYPE_REALTIME);
+    time_func_beg.user = time_get(YAYA_TIME_FRAGMENT_TYPE_USER, YAYA_TIME_CLOCK_TYPE_NONE);
+    time_func_beg.sys  = time_get(YAYA_TIME_FRAGMENT_TYPE_SYS, YAYA_TIME_CLOCK_TYPE_NONE);
 
     node->time_end = time_func_beg;
 
-    time_system_t time_diff = time_system_dif(logtime->last->time_end, logtime->last->time_beg);
+    time_system_t time_diff = time_system_dif(node->time_end, node->time_beg);
 
     node->time_min = time_system_min(time_diff, node->time_min);
     node->time_max = time_system_max(time_diff, node->time_max);
@@ -194,9 +223,14 @@ bool logtime_bar(logtime_t* logger_time) {
 
     recursive_set_flag(node);
 
-    //    time_system_t time_correction = time_system_get(YAYA_TIME_CLOCK_TYPE_REALTIME);
-    //    node->time_sum                = time_system_dif(node->time_sum, time_system_dif(time_correction, time_func_beg));
-    //    node->time_sum                = time_system_sum(node->time_sum, time_func_beg);
+    //    time_func_end.sys  = time_get(YAYA_TIME_FRAGMENT_TYPE_SYS, YAYA_TIME_CLOCK_TYPE_NONE);
+    //    time_func_end.user = time_get(YAYA_TIME_FRAGMENT_TYPE_USER, YAYA_TIME_CLOCK_TYPE_NONE);
+    //    time_func_end.real = time_get(YAYA_TIME_FRAGMENT_TYPE_REAL, YAYA_TIME_CLOCK_TYPE_REALTIME);
+
+    //    if (node->prev != NULL) {
+    //        node->prev->time_sum = time_system_dif(node->prev->time_sum, time_system_dif(time_func_end, time_func_beg));
+    //    }
+
     return true;
 }
 
