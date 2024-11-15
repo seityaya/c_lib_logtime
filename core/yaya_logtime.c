@@ -214,7 +214,6 @@ bool logtime_bar(logtime_t* logger_time) {
 
     node->time_min = time_system_min(time_diff, node->time_min);
     node->time_max = time_system_max(time_diff, node->time_max);
-    node->time_sum = time_system_sum(node->time_sum, time_diff);
     node->time_cnt++;
 
     node->bar_flag   = true;
@@ -239,14 +238,14 @@ static bool recursive_out_file(private_logger_time_t* logtime, logtime_node_t* h
         for (size_t i = 0; i < head->node_count; i++) {
             logtime_node_t* node = head->node[i];
             // clang-format off
-            fprintf(out, "%15.9f; " "%15.9f; " "%15.9f; ",
+            fprintf(out, "|%15.9f; " "%15.9f; " "%15.9f; |",
                          time_convflt(node->time_sum.real),
                          time_convflt(node->time_sum.user),
                          time_convflt(node->time_sum.sys));
 
             if (node->loop_flag) {
-                fprintf(out, "%15.9f; " "%15.9f; " "%15.9f; "
-                             "%15.9f; " "%15.9f; " "%15.9f; ",
+                fprintf(out, "|%15.9f; " "%15.9f; " "%15.9f; |"
+                             "|%15.9f; " "%15.9f; " "%15.9f; |",
                              time_convflt(node->time_min.real),
                              time_convflt(node->time_min.user),
                              time_convflt(node->time_min.sys),
@@ -254,19 +253,19 @@ static bool recursive_out_file(private_logger_time_t* logtime, logtime_node_t* h
                              time_convflt(node->time_max.user),
                              time_convflt(node->time_max.sys));
             } else {
-                fprintf(out, "%15s; %15s; %15s; "
-                             "%15s; %15s; %15s; ",
+                fprintf(out, "|%15s; %15s; %15s; |"
+                             "|%15s; %15s; %15s; |",
                              "-", "-", "-",
                              "-", "-", "-");
             }
 
             if (node->loop_flag) {
-                fprintf(out, "%15.9f; " "%15.9f; " "%15.9f; ",
+                fprintf(out, "|%15.9f; " "%15.9f; " "%15.9f; |",
                              time_convflt(node->time_sum.real) / node->time_cnt,
                              time_convflt(node->time_sum.user) / node->time_cnt,
                              time_convflt(node->time_sum.sys)  / node->time_cnt);
             } else {
-                fprintf(out, "%15s; %15s; %15s; ",
+                fprintf(out, "|%15s; %15s; %15s; |",
                              "-", "-", "-");
             }
 
@@ -289,10 +288,10 @@ bool logtime_out(logtime_t* logger_time, FILE* out) {
         // clang-format off
         fprintf(
             out,
-            "  time_sum.real;   time_sum.user;    time_sum.sys; "
-            "  time_min.real;   time_min.user;    time_min.sys; "
-            "  time_max.real;   time_max.user;    time_max.sys; "
-            "  time_avg.real;   time_avg.user;    time_avg.sys; "
+            "|  time_sum.real;   time_sum.user;    time_sum.sys; |"
+            "|  time_min.real;   time_min.user;    time_min.sys; |"
+            "|  time_max.real;   time_max.user;    time_max.sys; |"
+            "|  time_avg.real;   time_avg.user;    time_avg.sys; |"
             "  cnt loop; "
             "^ ; text;\n");
         // clang-format on
